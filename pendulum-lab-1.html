@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple Pendulum Lab: find g</title>
+<style>
+:root{
+  --paper:#eef4f8; --grid:#d2dfe8; --card:#ffffff; --ink:#12263a; --muted:#587084;
+  --line:#c3d3df; --accent:#0e7c86; --accent-ink:#ffffff; --stop:#b4321f; --brass:#c08a2e; --brass2:#8a5d14;
+  --ruler:#f6e7b4; --ruler-ink:#5b4a14; --ok:#1f7a45; --warn:#9a5b00;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0f1b26; --grid:#1b2c3b; --card:#16252f; --ink:#e6eef5; --muted:#93a9ba;
+    --line:#2c4254; --accent:#3cc0cc; --accent-ink:#06222a; --stop:#ff8470; --brass:#e0aa4a; --brass2:#a87a28;
+    --ruler:#3b3418; --ruler-ink:#f0dc95; --ok:#6fd49a; --warn:#f0b35a;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  color:var(--ink); background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px; line-height:1.4; padding:12px;
+}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-size:1.4rem;margin:4px 0 2px;letter-spacing:-.01em}
+.sub{margin:0 0 12px;color:var(--muted);font-size:.92rem}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+h2{font-size:1rem;margin:0 0 8px}
+.top{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:860px){ .top{grid-template-columns:1.35fr 1fr} }
+svg{width:100%;height:auto;display:block;touch-action:manipulation}
+.rig-bg{fill:var(--card)}
+.support{fill:var(--ink)}
+.guide{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 5;fill:none}
+.lead{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 3}
+.lead-txt{fill:var(--accent);font-size:13px;font-weight:700}
+.ghost{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3}
+.pt{fill:var(--ink);font-size:17px;font-weight:800}
+.dot{fill:var(--ink)}
+.string{stroke:var(--ink);stroke-width:1.6}
+.bob-fill{fill:var(--brass);stroke:var(--brass2);stroke-width:2}
+.ruler-body{fill:var(--ruler);stroke:var(--ruler-ink);stroke-width:1}
+.tick{stroke:var(--ruler-ink);stroke-width:1}
+.tick-txt{fill:var(--ruler-ink);font-size:9px;text-anchor:start}
+.ang-txt{fill:var(--muted);font-size:12px}
+
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.lbl{font-weight:600;font-size:.92rem}
+.val{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700}
+input[type=range]{width:100%;accent-color:var(--accent);height:32px}
+input[type=number]{width:90px;padding:8px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);font-size:1rem}
+.ctrl{margin-bottom:12px}
+button{
+  font:inherit;font-weight:700;border-radius:9px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);
+  padding:11px 14px;min-height:44px;cursor:pointer;flex:1 1 auto;
+}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.halt{background:var(--stop);color:#fff;border-color:var(--stop)}
+@media (prefers-color-scheme: dark){ button.halt{color:#2a0904} }
+button[disabled]{opacity:.45;cursor:not-allowed}
+.seg button{flex:1;padding:8px 6px;min-height:40px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.watch{
+  border:1.5px solid var(--line);border-radius:10px;padding:10px;background:var(--paper);margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:10px;
+}
+.time{font-size:2.3rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
+.time small{font-size:1rem;font-weight:600;color:var(--muted)}
+.cnt{text-align:right;font-size:.85rem;color:var(--muted)}
+.cnt b{display:block;font-size:1.6rem;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+.status{min-height:2.6em;font-size:.9rem;color:var(--muted);margin:6px 0 0}
+.status.ok{color:var(--ok);font-weight:600}.status.warn{color:var(--warn);font-weight:600}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}
+th,td{border:1.5px solid var(--line);padding:8px 6px;text-align:center;font-size:.92rem}
+th{background:var(--paper);font-weight:700;line-height:1.25}
+th span{display:block;font-weight:500;color:var(--muted);font-size:.78rem}
+td.empty{color:var(--muted)}
+.inst{font-size:12pt;margin:0 0 2px;color:var(--ink)}
+:root{--pt:var(--brass)}
+.gr-bg{fill:var(--card)}
+.gr-grid{stroke:var(--line);stroke-width:.7;opacity:.6}
+.gr-axis{stroke:var(--ink);stroke-width:1.8}
+.gr-txt{fill:var(--ink);font-size:12px}
+.gr-note{fill:var(--muted);font-size:11.5px}
+.gr-fit{stroke:var(--accent);stroke-width:2.2}
+.gr-tri{stroke:var(--muted);stroke-width:1.3;stroke-dasharray:5 4;fill:none}
+.gr-pt{fill:var(--pt);stroke:var(--ink);stroke-width:1.5}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+#printSheet{display:none;--ink:#000;--card:#fff;--muted:#333;--line:#777;--accent:#0b4f6c;--pt:#000;--paper:#fff;--stop:#000;
+  font-family:"Times New Roman",Times,serif;color:#000;background:#fff;font-size:12pt;line-height:1.35;color-scheme:light}
+#printSheet h1{font-size:18pt;text-align:center;margin:0 0 2pt;letter-spacing:0}
+#printSheet .ps-sub{text-align:center;margin:0 0 8pt}
+#printSheet .ps-meta{display:flex;justify-content:space-between;gap:14pt;margin-bottom:6pt}
+#printSheet .ps-meta span{flex:1;border-bottom:1px solid #000;padding-bottom:1pt}
+#printSheet h3{font-size:12pt;margin:10pt 0 4pt;border-bottom:1px solid #000;padding-bottom:1pt}
+#printSheet table{width:100%;min-width:0;border-collapse:collapse}
+#printSheet th,#printSheet td{border:1px solid #000;padding:3pt 4pt;font-size:10pt;color:#000;background:none;text-align:center}
+#printSheet th span{font-weight:normal;font-size:8.5pt;color:#000}
+#printSheet tfoot td{border-top:2.5px double #000;font-weight:700}
+#printSheet svg{width:150mm;max-width:100%;display:block;margin:0 auto;height:auto;border:1px solid #000;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+#printSheet table,#printSheet svg,#printSheet .ps-res{break-inside:avoid}
+#printSheet p{margin:3pt 0}
+#printSheet .ps-end{margin-top:16pt;text-align:right}
+@media print{
+  @page{size:A4;margin:14mm}
+  html,body{background:#fff !important;padding:0;margin:0}
+  body{background-image:none !important}
+  .wrap{display:none !important}
+  #printSheet{display:block}
+}
+tfoot td{background:var(--paper);font-weight:800;border-top:3px double var(--accent)}
+.calc{font-size:.98rem;font-weight:600;padding:10px;border:1.5px solid var(--line);border-radius:9px;background:var(--paper);display:grid;gap:4px}
+.calc div span{color:var(--muted);font-weight:500}
+td button{min-height:32px;padding:2px 9px;flex:none}
+.result{display:grid;gap:8px}
+.formula{font-size:1.15rem;font-weight:700;padding:10px;border:1.5px dashed var(--accent);border-radius:9px;background:var(--paper)}
+.big{font-size:1.9rem;font-weight:800;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--paper);font-size:.9rem;flex:1 1 140px}
+.chip b{display:block;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.how{margin:0;padding-left:1.2em;color:var(--muted);font-size:.88rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Simple Pendulum Lab</h1>
+  <p class="inst">Instructor: Ms. Naveera Nazneen</p>
+  <p class="sub">Find g from the length and the time of 10 oscillations.</p>
+
+  <div class="top">
+    <!-- APPARATUS -->
+    <section class="card" aria-label="Pendulum apparatus">
+      <svg id="rig" viewBox="0 0 560 350" role="img" aria-label="Simple pendulum with a metre scale beside it">
+        <defs>
+          <radialGradient id="bobg" cx="35%" cy="32%" r="75%">
+            <stop offset="0" stop-color="#fff3cf"/><stop offset=".45" stop-color="#d9a441"/><stop offset="1" stop-color="#8a5d14"/>
+          </radialGradient>
+        </defs>
+        <rect class="rig-bg" x="0" y="0" width="560" height="350" rx="6"/>
+        <g id="ruler"></g>
+        <rect class="support" x="220" y="22" width="160" height="9" rx="3"/>
+        <line id="restLine" class="guide"/>
+        <path id="arc" class="guide"/>
+        <line id="lead" class="lead"/>
+        <text id="leadTxt" class="lead-txt"></text>
+        <circle id="ghostA" class="ghost" r="14"/>
+        <circle id="ghostB" class="ghost" r="14"/>
+        <circle id="dotO" class="dot" r="3.5"/>
+        <text id="tA" class="pt">A</text>
+        <text id="tB" class="pt">B</text>
+        <text id="tO" class="pt">O</text>
+        <text id="angTxt" class="ang-txt" text-anchor="middle"></text>
+        <line id="string" class="string"/>
+        <circle id="bob" class="bob-fill" r="14" style="fill:url(#bobg)"/>
+        <circle class="dot" cx="300" cy="34" r="4"/>
+      </svg>
+      <p class="status" id="status" role="status" aria-live="polite">Set the length, then press Start pendulum. It is released from A.</p>
+    </section>
+
+    <!-- CONTROLS -->
+    <section class="card" aria-label="Controls">
+      <div class="ctrl">
+        <div class="row"><label class="lbl" for="lenRange">Length L (pivot to centre of bob)</label><span class="val" id="lenVal"></span></div>
+        <input id="lenRange" type="range" min="0.30" max="1.20" step="0.01" value="0.75">
+        <div class="row">
+          <button id="lenMinus" type="button" aria-label="Decrease length by 1 cm">−1 cm</button>
+          <input id="lenNum" type="number" min="0.30" max="1.20" step="0.01" inputmode="decimal" aria-label="Length in metres">
+          <button id="lenPlus" type="button" aria-label="Increase length by 1 cm">+1 cm</button>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div class="row"><label class="lbl" for="ampRange">Amplitude (A and B angle)</label><span class="val" id="ampVal"></span></div>
+        <input id="ampRange" type="range" min="2" max="70" step="1" value="10">
+      </div>
+
+      <div class="ctrl">
+        <div class="row">
+          <button id="penStart" class="go" type="button">Start pendulum</button>
+          <button id="penStop" class="halt" type="button" disabled>Stop pendulum</button>
+          <button id="penReset" type="button">Reset to O</button>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <div class="row"><span class="lbl">Speed</span></div>
+        <div class="row seg" id="speedSeg">
+          <button type="button" data-s="1" aria-pressed="true">1×</button>
+          <button type="button" data-s="2" aria-pressed="false">2×</button>
+          <button type="button" data-s="5" aria-pressed="false">5×</button>
+          <button type="button" data-s="10" aria-pressed="false">10×</button>
+        </div>
+      </div>
+
+      <h2>Stopwatch</h2>
+      <div class="watch">
+        <div class="time" id="time">0.00<small> s</small></div>
+        <div class="cnt">oscillations<b id="count">0</b></div>
+      </div>
+      <div class="row">
+        <button id="wToggle" class="go" type="button">Start watch</button>
+        <button id="wReset" type="button">Reset watch</button>
+        <button id="wSave" type="button" disabled>Save reading</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- TABLE -->
+  <section class="card" aria-label="Readings table">
+    <div class="row" style="margin-bottom:8px">
+      <h2 style="margin:0">Readings table</h2>
+      <div class="btn-row" style="margin-left:auto">
+        <button class="printBtn" type="button" style="flex:none;min-height:36px;padding:4px 12px">Print results</button>
+        <button id="clearAll" type="button" style="flex:none;min-height:36px;padding:4px 12px">Clear table</button>
+      </div>
+    </div>
+    <div class="tw" id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Length<span>L (m)</span></th>
+            <th>t₁<span>10 oscillations (s)</span></th>
+            <th>t₂<span>10 oscillations (s)</span></th>
+            <th>Avg t<span>(t₁ + t₂) / 2 (s)</span></th>
+            <th>Time period<span>T = t / 10 (s)</span></th>
+            <th>T²<span>(s²)</span></th>
+            <th>g<span>4π²L / T² (m/s²)</span></th>
+            <th><span>remove</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+    <p class="status" style="margin-top:8px">Take two readings (t₁ and t₂) at each length. Change the length and repeat for more rows (up to 8).</p>
+  </section>
+
+  <!-- GRAPH -->
+  <section class="card" aria-label="Graph">
+    <h2>Graph: L versus T²</h2>
+    <svg id="graph" viewBox="0 0 560 372" role="img" aria-label="Graph of T squared against length L"></svg>
+    <div class="calc" style="margin-top:8px">
+      <div>Since T² = (4π² / g) L, the graph is a straight line through O. <b>g = 4π² / slope</b></div>
+      <div id="slopeSub"><span>Save readings to plot the graph.</span></div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="card result" aria-label="Result">
+    <div class="row"><h2 style="margin:0">Result</h2>
+      <button class="printBtn go" type="button" style="flex:none;margin-left:auto">Print results</button>
+    </div>
+    <div class="formula">T = 2π √(L / g) &nbsp;⇒&nbsp; g = 4π² L / T²</div>
+    <div class="calc" aria-label="Formulas">
+      <div>Average reading: <b>Avg t = (t₁ + t₂) / 2</b></div>
+      <div>Time period: <b>T = Avg t / 10</b></div>
+      <div>Total average: <b>g (mean) = (g₁ + g₂ + … + gₙ) / n</b></div>
+      <div id="calcSub"><span>Fill the table to see the working.</span></div>
+    </div>
+    <div class="big" id="gBig">g = — m/s²</div>
+    <div class="chips">
+      <div class="chip">Mean of g from table<b id="gMean">—</b></div>
+      <div class="chip">g from graph slope<b id="gGraph">—</b></div>
+      <div class="chip">Standard value<b>9.81 m/s²</b></div>
+      <div class="chip">Percentage error<b id="gErr">—</b></div>
+    </div>
+    <ol class="how">
+      <li>Press Start pendulum, then Start watch.</li>
+      <li>When the counter shows 10, press Stop watch, then Save reading.</li>
+      <li>Do it twice per length. g is the mean of g = 4π²L/T² over all complete rows.</li>
+    </ol>
+  </section>
+</div>
+
+<div id="printSheet" aria-hidden="true"></div>
+
+<script>
+(function(){
+  const NS="http://www.w3.org/2000/svg";
+  const $=id=>document.getElementById(id);
+  const PXM=220, PX=300, PY=34, STD=9.81, TWO_PI=2*Math.PI;
+
+  // Hidden "true" lab value: close to 9.8 but never exactly 9.8
+  let gLab; do{ gLab = 9.70 + Math.random()*0.25; } while(Math.abs(gLab-9.80)<0.03);
+
+  const pen={L:0.75, amp:10, running:false, rest:true, phase:0, speed:1};
+  const watch={running:false, elapsed:0, final:null, valid:true, saved:false};
+  let rows=[];
+
+  const r2=x=>Math.round(x*100)/100;
+  const rad=d=>d*Math.PI/180;
+  function period(){ const a=rad(pen.amp); return TWO_PI*Math.sqrt(pen.L/gLab)*(1+0.1*a*a/16); }
+  function theta(){ return pen.rest?0 : -rad(pen.amp)*Math.cos(TWO_PI*pen.phase/period()); }
+
+  function say(msg,cls){ const s=$("status"); s.textContent=msg; s.className="status"+(cls?" "+cls:""); }
+
+  /* ---------- build ruler (0 at pivot level, 1 cm = 2.2 px) ---------- */
+  (function(){
+    const g=$("ruler"), cm=PXM/100;
+    const body=document.createElementNS(NS,"rect");
+    body.setAttribute("class","ruler-body"); body.setAttribute("x",6); body.setAttribute("y",PY);
+    body.setAttribute("width",42); body.setAttribute("height",cm*120); g.appendChild(body);
+    for(let c=0;c<=120;c++){
+      const y=PY+c*cm, len=c%10===0?14:(c%5===0?9:5);
+      const l=document.createElementNS(NS,"line"); l.setAttribute("class","tick");
+      l.setAttribute("x1",48); l.setAttribute("x2",48-len); l.setAttribute("y1",y); l.setAttribute("y2",y); g.appendChild(l);
+      if(c%10===0 && c>0){
+        const t=document.createElementNS(NS,"text"); t.setAttribute("class","tick-txt");
+        t.setAttribute("x",9); t.setAttribute("y",y+3); t.textContent=c; g.appendChild(t);
+      }
+    }
+    const u=document.createElementNS(NS,"text"); u.setAttribute("class","tick-txt");
+    u.setAttribute("x",9); u.setAttribute("y",PY+11); u.textContent="cm"; g.appendChild(u);
+  })();
+
+  /* ---------- drawing ---------- */
+  function setLine(el,x1,y1,x2,y2){ el.setAttribute("x1",x1);el.setAttribute("y1",y1);el.setAttribute("x2",x2);el.setAttribute("y2",y2); }
+  function setC(el,x,y){ el.setAttribute("cx",x); el.setAttribute("cy",y); }
+  function setT(el,x,y,t){ el.setAttribute("x",x); el.setAttribute("y",y); if(t!==undefined) el.textContent=t; }
+
+  function layout(){
+    const Lp=pen.L*PXM, a=rad(pen.amp);
+    const ox=PX, oy=PY+Lp;
+    const ax=PX-Lp*Math.sin(a), bx=PX+Lp*Math.sin(a), ay=PY+Lp*Math.cos(a);
+    setLine($("restLine"),PX,PY,ox,oy);
+    $("arc").setAttribute("d",`M ${ax} ${ay} A ${Lp} ${Lp} 0 0 0 ${bx} ${ay}`);
+    setC($("ghostA"),ax,ay); setC($("ghostB"),bx,ay); setC($("dotO"),ox,oy);
+    setT($("tA"),ax-6,ay+36); setT($("tB"),bx-6,ay+36); setT($("tO"),ox-6,oy+36);
+    setLine($("lead"),48,oy,PX,oy);
+    setT($("leadTxt"),56,oy-6,"L = "+(pen.L*100).toFixed(0)+" cm");
+    setT($("angTxt"),PX,PY+Math.min(Lp*0.5,60),"");
+    $("lenVal").textContent=pen.L.toFixed(2)+" m";
+    $("ampVal").textContent=pen.amp+"°";
+    $("lenRange").value=pen.L; $("lenNum").value=pen.L.toFixed(2); $("ampRange").value=pen.amp;
+  }
+  function drawBob(){
+    const Lp=pen.L*PXM, th=theta();
+    const x=PX+Lp*Math.sin(th), y=PY+Lp*Math.cos(th);
+    setLine($("string"),PX,PY,x,y); setC($("bob"),x,y);
+  }
+
+  /* ---------- table + result ---------- */
+  function rowCalc(r){
+    if(r.t1==null||r.t2==null) return null;
+    const avg=(r.t1+r.t2)/2, T=avg/10, T2=T*T, g=4*Math.PI*Math.PI*r.L/T2;
+    return {L:r.L,avg,T,T2,g};
+  }
+
+  /* ---------- analysis, graph and print ---------- */
+  const XA=0.3, XB=1.0;           // slope-triangle corners (m)
+  function analyse(){
+    const cs=rows.map(rowCalc).filter(Boolean), o={cs};
+    if(cs.length){
+      o.meanG=cs.reduce((a,c)=>a+c.g,0)/cs.length;
+      o.errG=Math.abs(o.meanG-STD)/STD*100;
+      o.m=cs.reduce((a,c)=>a+c.L*c.T2,0)/cs.reduce((a,c)=>a+c.L*c.L,0);   // best-fit slope through O
+      o.gGraph=4*Math.PI*Math.PI/o.m;
+      o.errGraph=Math.abs(o.gGraph-STD)/STD*100;
+    }
+    return o;
+  }
+  function slopeText(a){
+    const dL=XB-XA, dT=a.m*dL;
+    return "Slope = ΔT² / ΔL = "+dT.toFixed(2)+" / "+dL.toFixed(2)+" = "+a.m.toFixed(2)+" s²/m.  g = 4π² / slope = 39.48 / "+a.m.toFixed(2)+" = "+a.gGraph.toFixed(2)+" m/s²";
+  }
+  function renderGraph(a){
+    const X0=64,X1=536,Y0=316,Y1=20,XM=1.2,YM=5.5;
+    const sx=l=>X0+(X1-X0)*l/XM, sy=t=>Y0-(Y0-Y1)*t/YM;
+    let s='<rect class="gr-bg" x="0" y="0" width="560" height="372"/>';
+    for(let i=0;i<=12;i++){
+      const x=sx(i/10);
+      s+='<line class="gr-grid" x1="'+x+'" y1="'+Y0+'" x2="'+x+'" y2="'+Y1+'"/>';
+      if(i%2===0) s+='<text class="gr-txt" x="'+x+'" y="'+(Y0+17)+'" text-anchor="middle">'+(i/10).toFixed(1)+'</text>';
+    }
+    for(let j=0;j<=11;j++){
+      const y=sy(j*0.5);
+      s+='<line class="gr-grid" x1="'+X0+'" y1="'+y+'" x2="'+X1+'" y2="'+y+'"/>';
+      s+='<text class="gr-txt" x="'+(X0-8)+'" y="'+(y+4)+'" text-anchor="end">'+(j*0.5).toFixed(1)+'</text>';
+    }
+    s+='<line class="gr-axis" x1="'+X0+'" y1="'+Y0+'" x2="'+X1+'" y2="'+Y0+'"/>';
+    s+='<line class="gr-axis" x1="'+X0+'" y1="'+Y0+'" x2="'+X0+'" y2="'+Y1+'"/>';
+    if(a.cs.length){
+      const xe=Math.min(XM,YM/a.m), ya=a.m*XA, yb=a.m*XB;
+      s+='<line class="gr-fit" x1="'+sx(0)+'" y1="'+sy(0)+'" x2="'+sx(xe)+'" y2="'+sy(a.m*xe)+'"/>';
+      s+='<path class="gr-tri" d="M '+sx(XA)+' '+sy(ya)+' L '+sx(XB)+' '+sy(ya)+' L '+sx(XB)+' '+sy(yb)+'"/>';
+      s+='<text class="gr-note" x="'+((sx(XA)+sx(XB))/2)+'" y="'+(sy(ya)+16)+'" text-anchor="middle">ΔL = '+(XB-XA).toFixed(2)+' m</text>';
+      s+='<text class="gr-note" x="'+(sx(XB)+7)+'" y="'+((sy(ya)+sy(yb))/2+4)+'">ΔT² = '+(yb-ya).toFixed(2)+' s²</text>';
+      a.cs.forEach(c=>{ s+='<circle class="gr-pt" cx="'+sx(c.L)+'" cy="'+sy(c.T2)+'" r="5"/>'; });
+    }else{
+      s+='<text class="gr-note" x="'+((X0+X1)/2)+'" y="170" text-anchor="middle">Save t₁ and t₂ at 2 or more lengths to plot the line</text>';
+    }
+    s+='<text class="gr-txt" x="'+((X0+X1)/2)+'" y="355" text-anchor="middle">Length, L (m)</text>';
+    s+='<text class="gr-txt" transform="rotate(-90 16 168)" x="16" y="168" text-anchor="middle">T² (s²)</text>';
+    $("graph").innerHTML=s;
+    $("slopeSub").innerHTML=a.cs.length?"":"<span>Save readings to plot the graph.</span>";
+    if(a.cs.length) $("slopeSub").textContent=slopeText(a);
+    $("gGraph").textContent=a.cs.length?a.gGraph.toFixed(2)+" m/s²":"—";
+  }
+  function printResults(){
+    const a=analyse();
+    if(!a.cs.length){ say("Save t₁ and t₂ for at least one length before printing.","warn"); return; }
+    const tbl=document.querySelector("#tableWrap table").cloneNode(true);
+    tbl.querySelectorAll("tr").forEach(tr=>{ if(tr.lastElementChild) tr.lastElementChild.remove(); });
+    const gr=$("graph").cloneNode(true); gr.removeAttribute("id");
+    const sheet=$("printSheet"); sheet.innerHTML="";
+    const date=new Date().toLocaleDateString("en-GB");
+    const head=document.createElement("div");
+    head.innerHTML=
+      '<h1>Simple Pendulum</h1>'+
+      '<p class="ps-sub">To determine the acceleration due to gravity (g) using a simple pendulum</p>'+
+      '<div class="ps-meta"><span>Name:</span><span>Roll No.:</span><span>Date: '+date+'</span></div>'+
+      '<h3>Observations</h3>';
+    sheet.appendChild(head);
+    sheet.appendChild(tbl);
+    const calc=document.createElement("div");
+    calc.innerHTML=
+      '<h3>Calculations</h3>'+
+      '<p>Average reading: Avg t = (t₁ + t₂) / 2 &nbsp;&nbsp; Time period: T = Avg t / 10 &nbsp;&nbsp; g = 4π²L / T²</p>'+
+      '<p>Total average: Mean g = ('+a.cs.map(c=>c.g.toFixed(2)).join(" + ")+') / '+a.cs.length+' = '+a.meanG.toFixed(2)+' m/s²</p>'+
+      '<h3>Graph: L versus T²</h3>';
+    sheet.appendChild(calc);
+    sheet.appendChild(gr);
+    const res=document.createElement("div"); res.className="ps-res";
+    res.innerHTML=
+      '<p>'+slopeText(a)+'</p>'+
+      '<h3>Result</h3>'+
+      '<p>g (mean of table) = <b>'+a.meanG.toFixed(2)+' m/s²</b> &nbsp; (error '+a.errG.toFixed(2)+' % from 9.81 m/s²)</p>'+
+      '<p>g (from graph slope) = <b>'+a.gGraph.toFixed(2)+' m/s²</b> &nbsp; (error '+a.errGraph.toFixed(2)+' % from 9.81 m/s²)</p>'+
+      '<p class="ps-end">Instructor: Ms. Naveera Nazneen; Physics Department, RWU</p>';
+    sheet.appendChild(res);
+    setTimeout(()=>window.print(),80);
+  }
+  document.querySelectorAll(".printBtn").forEach(b=>b.onclick=printResults);
+  function renderTable(){
+    const tb=$("tbody"); tb.innerHTML="";
+    if(!rows.length){
+      const tr=document.createElement("tr"); const td=document.createElement("td");
+      td.colSpan=8; td.className="empty"; td.textContent="No readings yet. Save a reading to add the first row.";
+      tr.appendChild(td); tb.appendChild(tr);
+    }
+    rows.forEach((r,i)=>{
+      const c=rowCalc(r), tr=document.createElement("tr");
+      const cells=[r.L.toFixed(2), r.t1.toFixed(2), r.t2==null?"—":r.t2.toFixed(2),
+        c?c.avg.toFixed(2):"—", c?c.T.toFixed(3):"—", c?c.T2.toFixed(3):"—", c?c.g.toFixed(2):"—"];
+      cells.forEach(v=>{ const td=document.createElement("td"); td.textContent=v; if(v==="—")td.className="empty"; tr.appendChild(td); });
+      const td=document.createElement("td"); const b=document.createElement("button");
+      b.type="button"; b.textContent="✕"; b.setAttribute("aria-label","Remove row "+(i+1));
+      b.onclick=()=>{ rows.splice(i,1); renderTable(); };
+      td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
+    });
+    const cs=rows.map(rowCalc).filter(Boolean), gs=cs.map(c=>c.g);
+    const tf=$("tfoot"); tf.innerHTML="";
+    if(cs.length){
+      const mean=k=>cs.reduce((a,c)=>a+c[k],0)/cs.length;
+      const tr=document.createElement("tr");
+      [["Total average ("+cs.length+" row"+(cs.length>1?"s":"")+")",3],[mean("avg").toFixed(2),1],[mean("T").toFixed(3),1],[mean("T2").toFixed(3),1],[mean("g").toFixed(2),1],["",1]].forEach(([v,span])=>{
+        const td=document.createElement("td"); td.textContent=v; td.colSpan=span; tr.appendChild(td);
+      });
+      tf.appendChild(tr);
+      const sub=$("calcSub");
+      sub.innerHTML="";
+      const l1=document.createElement("div");
+      l1.textContent="Mean g = ("+gs.map(g=>g.toFixed(2)).join(" + ")+") / "+gs.length+" = "+mean("g").toFixed(2)+" m/s²";
+      sub.appendChild(l1);
+    }else{
+      $("calcSub").innerHTML="<span>Fill the table (t₁ and t₂) to see the working.</span>";
+    }
+    if(gs.length){
+      const m=gs.reduce((a,b)=>a+b,0)/gs.length, e=Math.abs(m-STD)/STD*100;
+      $("gBig").textContent="g = "+m.toFixed(2)+" m/s²";
+      $("gMean").textContent=m.toFixed(2)+" m/s²";
+      $("gErr").textContent=e.toFixed(2)+" %";
+    }else{
+      $("gBig").textContent="g = — m/s²"; $("gMean").textContent="—"; $("gErr").textContent="—";
+    }
+    renderGraph(analyse());
+  }
+
+  /* ---------- watch ---------- */
+  function updateWatch(){
+    const T=period(), n=Math.floor(watch.elapsed/T+1e-9);
+    const shown=watch.final!=null?watch.final:watch.elapsed;
+    $("time").innerHTML=shown.toFixed(2)+"<small> s</small>";
+    $("count").textContent=watch.final!=null?10:n;
+    $("wToggle").textContent=watch.running?"Stop watch":"Start watch";
+    $("wToggle").className=watch.running?"halt":"go";
+    $("wSave").disabled=!(watch.final!=null && !watch.saved);
+    $("penStart").disabled=pen.running; $("penStop").disabled=!pen.running;
+  }
+  let announced=false;
+  function resetWatch(){ watch.running=false; watch.elapsed=0; watch.final=null; watch.valid=true; watch.saved=false; announced=false; updateWatch(); }
+
+  /* ---------- pendulum actions ---------- */
+  function resetPen(msg){
+    pen.running=false; pen.rest=true; pen.phase=0; resetWatch(); drawBob();
+    say(msg||"Pendulum is at rest at O.");
+  }
+  $("penStart").onclick=()=>{
+    if(pen.rest){ pen.rest=false; pen.phase=0; }
+    pen.running=true; updateWatch(); say("Pendulum released from A. Start the watch when you are ready.");
+  };
+  $("penStop").onclick=()=>{
+    pen.running=false;
+    if(watch.running){ watch.running=false; watch.valid=false; say("Pendulum stopped, so the watch was stopped too. Reset the watch and try again.","warn"); }
+    else say("Pendulum stopped. Press Start pendulum to continue.");
+    updateWatch();
+  };
+  $("penReset").onclick=()=>resetPen("Pendulum reset to O. Press Start pendulum to release it from A.");
+
+  $("wToggle").onclick=()=>{
+    if(!watch.running){
+      if(!pen.running){ say("Start the pendulum first, then start the watch.","warn"); return; }
+      if(watch.final!=null||!watch.valid||watch.elapsed>0){ resetWatch(); }
+      watch.running=true; say("Watch running. Stop it after the counter reaches 10."); updateWatch();
+    }else{
+      watch.running=false;
+      const T=period(), n=Math.floor(watch.elapsed/T+1e-9);
+      if(n>=10){
+        // time of the 10th oscillation, with a small human reaction error (±0.08 s)
+        watch.final=r2(10*T + (Math.random()-0.5)*0.16);
+        say("Time for 10 oscillations: "+watch.final.toFixed(2)+" s. Press Save reading.","ok");
+      }else{
+        watch.valid=false;
+        say("Only "+n+" oscillation"+(n===1?"":"s")+" counted. Wait for 10, then stop. Reset the watch to try again.","warn");
+      }
+      updateWatch();
+    }
+  };
+  $("wReset").onclick=()=>{ resetWatch(); say("Watch reset."); };
+  $("wSave").onclick=()=>{
+    if(watch.final==null||watch.saved) return;
+    const t=watch.final, L=r2(pen.L);
+    let row=rows.find(r=>Math.abs(r.L-L)<0.005);
+    if(!row){
+      if(rows.length>=8){ say("Table is full (8 rows). Remove a row first.","warn"); return; }
+      rows.push({L,t1:t,t2:null});
+      say("Saved as t₁ for L = "+L.toFixed(2)+" m. Now take t₂ at the same length.","ok");
+    }else if(row.t2==null){
+      row.t2=t; say("Saved as t₂. Change the length for the next row.","ok");
+    }else{
+      say("t₁ and t₂ are already filled for this length. Change the length or remove the row.","warn"); return;
+    }
+    watch.saved=true; renderTable(); resetWatch();
+  };
+  $("clearAll").onclick=()=>{ rows=[]; renderTable(); say("Table cleared."); };
+
+  /* ---------- length / amplitude / speed ---------- */
+  function setLength(v){
+    v=Math.min(1.2,Math.max(0.3,Math.round(v*100)/100)); if(isNaN(v)) return;
+    pen.L=v; layout(); resetPen("Length set to "+v.toFixed(2)+" m. Pendulum is back at O.");
+  }
+  $("lenRange").oninput=e=>setLength(parseFloat(e.target.value));
+  $("lenNum").onchange=e=>setLength(parseFloat(e.target.value));
+  $("lenMinus").onclick=()=>setLength(pen.L-0.01);
+  $("lenPlus").onclick=()=>setLength(pen.L+0.01);
+  $("ampRange").oninput=e=>{ pen.amp=parseInt(e.target.value,10); layout(); resetPen("Amplitude set to "+pen.amp+"°. Pendulum is back at O."); };
+  $("speedSeg").onclick=e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    pen.speed=parseInt(b.dataset.s,10);
+    [...$("speedSeg").children].forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  };
+
+  /* ---------- animation loop ---------- */
+  let last=null;
+  function frame(ts){
+    if(last===null) last=ts;
+    let dt=(ts-last)/1000; last=ts; if(dt>0.1) dt=0.1;
+    const sdt=dt*pen.speed;
+    if(pen.running){
+      pen.phase+=sdt;
+      if(watch.running){
+        watch.elapsed+=sdt;
+        if(!announced && Math.floor(watch.elapsed/period()+1e-9)>=10){ announced=true; say("10 oscillations done. Press Stop watch now.","ok"); }
+      }
+      drawBob(); updateWatch();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  layout(); drawBob(); renderTable(); updateWatch();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
